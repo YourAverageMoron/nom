@@ -49,6 +49,11 @@ type Theme struct {
 	SelectedItemColor string `yaml:"selectedItemColor,omitempty"`
 }
 
+type DBOptions struct {
+	TursoPrimaryUrl string `yaml:"tursoPrimaryUrl,omitempty"`
+	TursoAuthToken  string `yaml:"tursoAuthToken,omitempty"`
+}
+
 // need to add to Load() below if loading from config file
 type Config struct {
 	ConfigPath     string
@@ -65,6 +70,7 @@ type Config struct {
 	Openers      []Opener     `yaml:"openers,omitempty"`
 	Theme        Theme        `yaml:"theme,omitempty"`
 	HTTPOptions  *HTTPOptions `yaml:"http,omitempty"`
+	DBOptions    *DBOptions   `yaml:"db,omitempty"`
 }
 
 func (c *Config) ToggleShowRead() {
@@ -113,6 +119,7 @@ func New(configPath string, pager string, previewFeeds []string, version string)
 		HTTPOptions: &HTTPOptions{
 			MinTLSVersion: tls.VersionName(tls.VersionTLS12),
 		},
+		DBOptions: &DBOptions{},
 	}, nil
 }
 
@@ -191,6 +198,9 @@ func (c *Config) Load() error {
 			c.Feeds = append(c.Feeds, freshfeeds...)
 		}
 	}
+
+	c.DBOptions.TursoPrimaryUrl = fileConfig.DBOptions.TursoPrimaryUrl
+	c.DBOptions.TursoAuthToken = fileConfig.DBOptions.TursoAuthToken
 
 	return nil
 }

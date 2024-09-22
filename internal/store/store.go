@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/tursodatabase/go-libsql"
 )
 
 type Item struct {
@@ -46,23 +45,41 @@ type SQLiteStore struct {
 	db   *sql.DB
 }
 
-func NewSQLiteStore(basePath string) (*SQLiteStore, error) {
+func NewTursoStore(basePath string, primaryUrl string, authToken string) (*SQLiteStore, error) {
 	dbpath := filepath.Join(basePath, "nom.db")
+	connector, err := libsql.NewEmbeddedReplicaConnector(dbpath, primaryUrl, libsql.WithAuthToken(authToken))
+	if err != nil {
+		return nil, err
+	}
+	db := sql.OpenDB(connector)
 
-	info, _ := os.Stat(dbpath)
+	err = dbSetup(db)
+	if err != nil {
+		return nil, fmt.Errorf("NewSQLiteCache: %w", err)
+	}
+	err = runMigrations(db)
+	if err != nil {
+		return nil, fmt.Errorf("NewSQLiteCache: %w", err)
+	}
+	return &SQLiteStore{
+		db:   db,
+		path: dbpath,
+	}, nil
+}
 
-	db, err := sql.Open("sqlite3", dbpath)
+func NewSQLiteStore(basePath string) (*SQLiteStore, error) {
+	dbpath := "file:" + filepath.Join(basePath, "nom.db")
+
+	db, err := sql.Open("libsql", dbpath)
 	if err != nil {
 		return nil, fmt.Errorf("NewSQLiteCache: %w", err)
 	}
 
 	// if there was no db file before we create the connection then we want to run
 	// the initial queries now that sqlite db has been created and connected to
-	if info == nil {
-		err = dbSetup(db)
-		if err != nil {
-			return nil, fmt.Errorf("NewSQLiteCache: %w", err)
-		}
+	err = dbSetup(db)
+	if err != nil {
+		return nil, fmt.Errorf("NewSQLiteCache: %w", err)
 	}
 
 	err = runMigrations(db)
@@ -85,8 +102,8 @@ func dbSetup(db *sql.DB) error {
 
 	// See migrations below for additions
 	stm := `
-		create table items (id integer primary key, feedurl text, link text, title text, content text, author text, readat datetime, publishedat datetime, updatedat datetime, createdat datetime);
-		create table migrations (id integer not null, runat datetime);
+		create table if not exists items (id integer primary key, feedurl text, link text, title text, content text, author text, readat datetime, publishedat datetime, updatedat datetime, createdat datetime);
+		create table if not exists migrations (id integer not null, runat datetime);
 	`
 
 	_, err = tx.Exec(stm)

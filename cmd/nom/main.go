@@ -36,7 +36,7 @@ func run(args []string, opts Options) error {
 		return err
 	}
 
-	s, err := store.NewSQLiteStore(cfg.ConfigDir)
+	s, err := store.NewTursoStore(cfg.ConfigDir, cfg.DBOptions.TursoPrimaryUrl, cfg.DBOptions.TursoAuthToken)
 	if err != nil {
 		return fmt.Errorf("main.go: %w", err)
 	}
@@ -67,6 +67,7 @@ func run(args []string, opts Options) error {
 }
 
 func main() {
+
 	var opts Options
 
 	parser := flags.NewParser(&opts, flags.Default)
@@ -87,6 +88,7 @@ func main() {
 			fmt.Printf("%v\n", err)
 		}
 
+		fmt.Println(err)
 		parser.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
