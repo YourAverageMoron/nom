@@ -36,7 +36,13 @@ func run(args []string, opts Options) error {
 		return err
 	}
 
-	s, err := store.NewTursoStore(cfg.ConfigDir, cfg.DBOptions.TursoPrimaryUrl, cfg.DBOptions.TursoAuthToken)
+	var s store.Store
+	if cfg.DBOptions != nil && cfg.DBOptions.Turso != nil {
+		s, err = store.NewTursoStore(cfg.ConfigDir, cfg.DBOptions.Turso.PrimaryUrl, cfg.DBOptions.Turso.AuthToken)
+	} else {
+		s, err = store.NewSQLiteStore(cfg.ConfigDir)
+	}
+
 	if err != nil {
 		return fmt.Errorf("main.go: %w", err)
 	}

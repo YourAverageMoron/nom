@@ -49,9 +49,13 @@ type Theme struct {
 	SelectedItemColor string `yaml:"selectedItemColor,omitempty"`
 }
 
+type TursoDB struct {
+	PrimaryUrl string `yaml:"primaryUrl,omitempty"`
+	AuthToken  string `yaml:"authToken,omitempty"`
+}
+
 type DBOptions struct {
-	TursoPrimaryUrl string `yaml:"tursoPrimaryUrl,omitempty"`
-	TursoAuthToken  string `yaml:"tursoAuthToken,omitempty"`
+	Turso *TursoDB `yaml:"turso,omitempty"`
 }
 
 // need to add to Load() below if loading from config file
@@ -119,7 +123,9 @@ func New(configPath string, pager string, previewFeeds []string, version string)
 		HTTPOptions: &HTTPOptions{
 			MinTLSVersion: tls.VersionName(tls.VersionTLS12),
 		},
-		DBOptions: &DBOptions{},
+		DBOptions: &DBOptions{
+			Turso: &TursoDB{},
+		},
 	}, nil
 }
 
@@ -199,8 +205,12 @@ func (c *Config) Load() error {
 		}
 	}
 
-	c.DBOptions.TursoPrimaryUrl = fileConfig.DBOptions.TursoPrimaryUrl
-	c.DBOptions.TursoAuthToken = fileConfig.DBOptions.TursoAuthToken
+	if fileConfig.DBOptions != nil && fileConfig.DBOptions.Turso != nil {
+		c.DBOptions.Turso.PrimaryUrl = fileConfig.DBOptions.Turso.PrimaryUrl
+		c.DBOptions.Turso.AuthToken = fileConfig.DBOptions.Turso.AuthToken
+	} else {
+        c.DBOptions.Turso = nil
+    }
 
 	return nil
 }
